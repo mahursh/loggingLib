@@ -68,35 +68,37 @@ public class LoggingFilter implements Filter {
         logExit(httpServletRequest, httpServletResponse, start, end);
     }
 
-
-
     private void logEntry(HttpServletRequest request) {
         String entryLog;
+        String headersFormatted = JsonUtil.formatHeaders(JsonUtil.headersToMap(request)); // Use the new method
+
         if ("ISO27001".equalsIgnoreCase(logFormat)) {
             entryLog = String.format(COLOR_BLUE + """
-                    \n<-----------------------------------ISO 27001 SERVICE CALL----------------------------------->
-                    REQUEST:
-                    \tURL: %s
-                    \tHTTP METHOD: %s
-                    \tHEADER: %s
-                    <-------------------------------------------------------------------------------------------->
-                    """ + COLOR_RESET,
+                \n<-----------------------------------ISO 27001 SERVICE CALL----------------------------------->
+                REQUEST:
+                \tURL: %s
+                \tHTTP METHOD: %s
+                \tHEADER:
+                %s
+                <-------------------------------------------------------------------------------------------->
+                """ + COLOR_RESET,
                     request.getRequestURI(),
                     request.getMethod(),
-                    JsonUtil.prettyJson(JsonUtil.headersToMap(request), objectMapper)
+                    headersFormatted
             );
         } else {
             entryLog = String.format(COLOR_GREEN + """
-                    \n<----------------------------------------JSON SERVICE CALL---------------------------------------->
-                    REQUEST:
-                    \tURL: %s
-                    \tHTTP METHOD: %s
-                    \tHEADER: %s
-                    <------------------------------------------------------------------------------------------------>
-                    """ + COLOR_RESET,
+                \n<----------------------------------------JSON SERVICE CALL---------------------------------------->
+                REQUEST:
+                \tURL: %s
+                \tHTTP METHOD: %s
+                \tHEADER:
+                %s
+                <------------------------------------------------------------------------------------------------>
+                """ + COLOR_RESET,
                     request.getRequestURI(),
                     request.getMethod(),
-                    JsonUtil.prettyJson(JsonUtil.headersToMap(request), objectMapper)
+                    headersFormatted
             );
         }
         logger.info(entryLog);
@@ -105,16 +107,17 @@ public class LoggingFilter implements Filter {
     private void logExit(HttpServletRequest request, HttpServletResponse response, Instant start, Instant end) {
         String duration = String.format("%d ms", ChronoUnit.MILLIS.between(start, end));
         String exitLog;
+
         if ("ISO27001".equalsIgnoreCase(logFormat)) {
             exitLog = String.format(COLOR_BLUE + """
-                    \n<-----------------------------------ISO 27001 SERVICE END----------------------------------->
-                    RESPONSE:
-                    \tURL: %s
-                    \tHTTP METHOD: %s
-                    \tHTTP STATUS: %d
-                    \tDURATION: %s
-                    <------------------------------------------------------------------------------------------->
-                    """ + COLOR_RESET,
+                \n<-----------------------------------ISO 27001 SERVICE END----------------------------------->
+                RESPONSE:
+                \tURL: %s
+                \tHTTP METHOD: %s
+                \tHTTP STATUS: %d
+                \tDURATION: %s
+                <------------------------------------------------------------------------------------------->
+                """ + COLOR_RESET,
                     request.getRequestURI(),
                     request.getMethod(),
                     response.getStatus(),
@@ -122,14 +125,14 @@ public class LoggingFilter implements Filter {
             );
         } else {
             exitLog = String.format(COLOR_GREEN + """
-                    \n<----------------------------------------JSON SERVICE END---------------------------------------->
-                    RESPONSE:
-                    \tURL: %s
-                    \tHTTP METHOD: %s
-                    \tHTTP STATUS: %d
-                    \tDURATION: %s
-                    <------------------------------------------------------------------------------------------------>
-                    """ + COLOR_RESET,
+                \n<----------------------------------------JSON SERVICE END---------------------------------------->
+                RESPONSE:
+                \tURL: %s
+                \tHTTP METHOD: %s
+                \tHTTP STATUS: %d
+                \tDURATION: %s
+                <------------------------------------------------------------------------------------------------>
+                """ + COLOR_RESET,
                     request.getRequestURI(),
                     request.getMethod(),
                     response.getStatus(),

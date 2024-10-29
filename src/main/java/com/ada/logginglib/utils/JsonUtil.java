@@ -29,6 +29,14 @@ public class JsonUtil {
         }
         return headersMap;
     }
+
+    public static String formatHeaders(Map<String, String> headersMap) {
+        StringBuilder formattedHeaders = new StringBuilder();
+        headersMap.forEach((key, value) -> {
+            formattedHeaders.append(String.format("\t\t%s: %s%n", key, value));
+        });
+        return formattedHeaders.toString();
+    }
 }
 
 
