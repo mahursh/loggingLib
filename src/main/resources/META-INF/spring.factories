@@ -1,2 +1,2 @@
-#org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-#com.ada.logginglib.config.LoggingAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.ada.logginglib.config.LoggingAutoConfiguration
