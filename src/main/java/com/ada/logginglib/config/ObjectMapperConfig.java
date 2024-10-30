@@ -7,10 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 
-//@AutoConfiguration
 @Configuration
 public class ObjectMapperConfig {
-    @Bean
+    @Bean(name = "objectMapper")
     @ConditionalOnMissingBean
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();

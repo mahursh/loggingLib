@@ -27,3 +27,5 @@ dependencies {
 jar {
     enabled = true
 }
+
+//bootJar.dependsOn fooTask
