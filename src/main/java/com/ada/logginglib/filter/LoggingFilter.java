@@ -1,7 +1,5 @@
 package com.ada.logginglib.filter;
 
-
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -19,7 +17,6 @@ import com.ada.logginglib.utils.JsonUtil;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-
 import static com.ada.logginglib.constant.Colors.COLOR_GREEN;
 import static com.ada.logginglib.constant.Colors.COLOR_RESET;
 import static com.ada.logginglib.constant.Colors.COLOR_BLUE;
@@ -142,16 +139,14 @@ public class LoggingFilter implements Filter {
         logger.info(exitLog);
     }
 
-    private void exception(Exception exception , ResponseEntity<?> response){
-        String message ="\n<---------------------------------------------EXCEPTION SERVICE CALLED---------------------------------------------->\n";
-        message = message.concat("MESSAGE: %s\n");
-        message = message.concat("RESPONSE: \n");
-        message = message.concat("\tBODY: %s\n");
-        message = message.concat("\tHTTP STATUS: %s\n");
-        message = message.concat("<-------------------------------------------------------------------------------------------------------------------\n>");
+    private void logException(Exception exception, ResponseEntity<?> response) {
+        String message = "\n<---------------------------------------------EXCEPTION SERVICE CALLED---------------------------------------------->\n";
+        message += String.format("MESSAGE: %s\n", exception.getMessage());
+        message += String.format("RESPONSE: \n\tBODY: %s\n", JsonUtil.prettyJson(response.getBody(), objectMapper));
+        message += String.format("\tHTTP STATUS: %s\n", response.getStatusCode());
+        message += "<-------------------------------------------------------------------------------------------------------------------\n>";
 
         logger.error(message);
-
     }
 }
 
