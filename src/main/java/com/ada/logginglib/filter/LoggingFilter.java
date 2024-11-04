@@ -29,6 +29,7 @@ import static com.ada.logginglib.constant.Colors.*;
 
 //TODO: remove all methods from here and put them to the seperated files .
 //TODO: add try catch if needed .
+//TODO: test AutoConfiguration .
 @Component
 public class LoggingFilter implements Filter {
 
