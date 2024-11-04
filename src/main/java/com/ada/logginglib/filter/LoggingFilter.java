@@ -26,6 +26,8 @@ import java.util.regex.Pattern;
 
 import static com.ada.logginglib.constant.Colors.*;
 
+
+//TODO: remove all methods from here and put them to the seperated files .
 @Component
 public class LoggingFilter implements Filter {
 
@@ -122,7 +124,7 @@ public class LoggingFilter implements Filter {
                     );
             logger.info(isoLogEntry);
 
-        }
+        }//TODO: handle other formats and not valid formats.
     }
 
     private void logExit(HttpServletRequest request, HttpServletResponse response, Instant start, Instant end) throws JsonProcessingException {
@@ -148,15 +150,15 @@ public class LoggingFilter implements Filter {
                     duration
             );
             logger.info(isoLogExit);
-        }
+        }//TODO: handle other formats and not valid formats.
     }
 
     private String getRequestBody(HttpServletRequest request) throws IOException {
         if (excludedBodyPaths.stream().anyMatch(pattern -> pattern.matcher(request.getRequestURI()).matches())) {
             return "Body excluded";
         }
-        // Logic to read the body (if applicable)
-        return ""; // Return the body as needed
+        // TODO: logic to read the body .
+        return "";
     }
 
     private Set<Pattern> compilePatterns(Set<String> regexStrings) {
@@ -166,6 +168,8 @@ public class LoggingFilter implements Filter {
         }
         return patterns;
     }
+
+    //TODO: a method to flatten the nested object.
 
 
     private static class LogEntry {
