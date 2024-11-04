@@ -62,7 +62,7 @@ public class LoggingFilter implements Filter {
     //TODO: it is setting **** as the key , not the value.
     private String applyMaskingRules(String jsonString) {
         for (Map.Entry<Pattern, String> rule : maskingRules.entrySet()) {
-            jsonString = jsonString.replaceAll(rule.getKey().pattern(), rule.getValue());
+            jsonString = jsonString.replaceAll(rule.getKey().pattern()  ,rule.getValue());
         }
         return jsonString;
     }
