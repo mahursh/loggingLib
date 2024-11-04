@@ -58,6 +58,8 @@ public class LoggingFilter implements Filter {
         rules.forEach((pattern, mask) -> maskingRules.put(Pattern.compile(pattern), mask));
     }
 
+
+    //TODO: it is setting **** as the key , not the value.
     private String applyMaskingRules(String jsonString) {
         for (Map.Entry<Pattern, String> rule : maskingRules.entrySet()) {
             jsonString = jsonString.replaceAll(rule.getKey().pattern(), rule.getValue());
