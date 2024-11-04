@@ -1,5 +1,6 @@
 package com.ada.logginglib.filter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -11,32 +12,44 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import com.ada.logginglib.utils.JsonUtil;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import static com.ada.logginglib.constant.Colors.COLOR_GREEN;
-import static com.ada.logginglib.constant.Colors.COLOR_RESET;
-import static com.ada.logginglib.constant.Colors.COLOR_BLUE;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+import static com.ada.logginglib.constant.Colors.*;
 
 @Component
-
 public class LoggingFilter implements Filter {
 
     private final ObjectMapper objectMapper;
     private static final Logger logger = LoggerFactory.getLogger(LoggingFilter.class);
 
-
+    private Set<Pattern> maskedParameters = new HashSet<>();
+    private Set<Pattern> ignoredPaths = new HashSet<>();
+    private Set<Pattern> excludedBodyPaths = new HashSet<>();
     private String logFormat = "JSON";
-
-
 
     public LoggingFilter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
+    public void setMaskedParameters(Set<String> maskedParameters) {
+        this.maskedParameters = compilePatterns(maskedParameters);
+    }
+
+    public void setIgnoredPaths(Set<String> ignoredPaths) {
+        this.ignoredPaths = compilePatterns(ignoredPaths);
+    }
+
+    public void setExcludedBodyPaths(Set<String> excludedBodyPaths) {
+        this.excludedBodyPaths = compilePatterns(excludedBodyPaths);
+    }
 
     public void setLogFormat(String logFormat) {
         this.logFormat = logFormat;
@@ -51,102 +64,132 @@ public class LoggingFilter implements Filter {
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
 
+        if (shouldLog(httpServletRequest.getRequestURI())) {
+            var start = Instant.now();
+            logEntry(httpServletRequest);
 
-        var start = Instant.now();
+            chain.doFilter(request, response);
 
-
-        logEntry(httpServletRequest);
-
-
-        chain.doFilter(request, response);
-
-
-        var end = Instant.now();
-        logExit(httpServletRequest, httpServletResponse, start, end);
-    }
-
-    private void logEntry(HttpServletRequest request) {
-        String entryLog;
-        String headersFormatted = JsonUtil.formatHeaders(JsonUtil.headersToMap(request)); // Use the new method
-
-        if ("ISO27001".equalsIgnoreCase(logFormat)) {
-            entryLog = String.format(COLOR_BLUE + """
-                \n<-----------------------------------ISO 27001 SERVICE CALL----------------------------------->
-                REQUEST:
-                \tURL: %s
-                \tHTTP METHOD: %s
-                \tHEADER:
-                %s
-                <-------------------------------------------------------------------------------------------->
-                """ + COLOR_RESET,
-                    request.getRequestURI(),
-                    request.getMethod(),
-                    headersFormatted
-            );
+            var end = Instant.now();
+            logExit(httpServletRequest, httpServletResponse, start, end);
         } else {
-            entryLog = String.format(COLOR_GREEN + """
-                \n<----------------------------------------JSON SERVICE CALL---------------------------------------->
-                REQUEST:
-                \tURL: %s
-                \tHTTP METHOD: %s
-                \tHEADER:
-                %s
-                <------------------------------------------------------------------------------------------------>
-                """ + COLOR_RESET,
-                    request.getRequestURI(),
-                    request.getMethod(),
-                    headersFormatted
-            );
+            chain.doFilter(request, response);
         }
-        logger.info(entryLog);
     }
 
-    private void logExit(HttpServletRequest request, HttpServletResponse response, Instant start, Instant end) {
+    private boolean shouldLog(String requestUri) {
+        return ignoredPaths.stream().noneMatch(pattern -> pattern.matcher(requestUri).matches());
+    }
+
+    private void logEntry(HttpServletRequest request) throws IOException {
+        String body = getRequestBody(request);
+        String headersFormatted = JsonUtil.formatHeaders(JsonUtil.headersToMap(request));
+
+        if ("JSON".equalsIgnoreCase(logFormat)) {
+            var logEntry = new LogEntry(request.getRequestURI(), request.getMethod(), headersFormatted, body);
+            String jsonLogEntry = objectMapper.writeValueAsString(logEntry);
+            logger.info(jsonLogEntry);
+        } else if ("ISO".equalsIgnoreCase(logFormat)){
+            String isoLogEntry = String.format(COLOR_GREEN + """
+                    \n
+                    REQUEST:
+                    \tURL: %s
+                    \tHTTP METHOD: %s
+                    \tHEADERS: %s
+                    \tBODY: %s
+                    """ + COLOR_RESET,
+                    request.getRequestURI(),
+                    request.getMethod(),
+                    headersFormatted,
+                    body
+
+                    );
+            logger.info(isoLogEntry);
+
+        }
+    }
+
+    private void logExit(HttpServletRequest request, HttpServletResponse response, Instant start, Instant end) throws JsonProcessingException {
         String duration = String.format("%d ms", ChronoUnit.MILLIS.between(start, end));
-        String exitLog;
 
-        if ("ISO27001".equalsIgnoreCase(logFormat)) {
-            exitLog = String.format(COLOR_BLUE + """
-                \n<-----------------------------------ISO 27001 SERVICE END----------------------------------->
-                RESPONSE:
-                \tURL: %s
-                \tHTTP METHOD: %s
-                \tHTTP STATUS: %d
-                \tDURATION: %s
-                <------------------------------------------------------------------------------------------->
-                """ + COLOR_RESET,
-                    request.getRequestURI(),
-                    request.getMethod(),
-                    response.getStatus(),
-                    duration
-            );
-        } else {
-            exitLog = String.format(COLOR_GREEN + """
-                \n<----------------------------------------JSON SERVICE END---------------------------------------->
-                RESPONSE:
-                \tURL: %s
-                \tHTTP METHOD: %s
-                \tHTTP STATUS: %d
-                \tDURATION: %s
-                <------------------------------------------------------------------------------------------------>
-                """ + COLOR_RESET,
-                    request.getRequestURI(),
-                    request.getMethod(),
-                    response.getStatus(),
-                    duration
-            );
+        if ("JSON".equalsIgnoreCase(logFormat)) {
+            var logExit = new LogExit(request.getRequestURI(), request.getMethod(), response.getStatus(), duration);
+            String jsonLogExit = objectMapper.writeValueAsString(logExit);
+            logger.info(jsonLogExit);
         }
-        logger.info(exitLog);
+        else if ("ISO".equalsIgnoreCase(logFormat)) {
+            String isoLogExit = String.format(COLOR_BLUE + """
+                \n
+                RESPONSE:
+                \tURL: %s
+                \tHTTP METHOD: %s
+                \tHTTP STATUS: %d
+                \tDURATION: %s
+                """ + COLOR_RESET,
+                    request.getRequestURI(),
+                    request.getMethod(),
+                    response.getStatus(),
+                    duration
+            );
+            logger.info(isoLogExit);
+        }
     }
 
-    private void logException(Exception exception, ResponseEntity<?> response) {
-        String message = "\n<---------------------------------------------EXCEPTION SERVICE CALLED---------------------------------------------->\n";
-        message += String.format("MESSAGE: %s\n", exception.getMessage());
-        message += String.format("RESPONSE: \n\tBODY: %s\n", JsonUtil.prettyJson(response.getBody(), objectMapper));
-        message += String.format("\tHTTP STATUS: %s\n", response.getStatusCode());
-        message += "<-------------------------------------------------------------------------------------------------------------------\n>";
+    private String getRequestBody(HttpServletRequest request) throws IOException {
+        if (excludedBodyPaths.stream().anyMatch(pattern -> pattern.matcher(request.getRequestURI()).matches())) {
+            return "Body excluded";
+        }
+        // Logic to read the body (if applicable)
+        return ""; // Return the body as needed
+    }
 
-        logger.error(message);
+    // Compile regex patterns from Set<String> to Set<Pattern>
+    private Set<Pattern> compilePatterns(Set<String> regexStrings) {
+        Set<Pattern> patterns = new HashSet<>();
+        for (String regex : regexStrings) {
+            patterns.add(Pattern.compile(regex));
+        }
+        return patterns;
+    }
+
+    // LogEntry and LogExit classes for JSON logging
+    private static class LogEntry {
+        private final String url;
+        private final String method;
+        private final String headers;
+        private final String body;
+
+        public LogEntry(String url, String method, String headers, String body) {
+            this.url = url;
+            this.method = method;
+            this.headers = headers;
+            this.body = body;
+        }
+
+        // Getters for serialization
+        public String getUrl() { return url; }
+        public String getMethod() { return method; }
+        public String getHeaders() { return headers; }
+        public String getBody() { return body; }
+    }
+
+    private static class LogExit {
+        private final String url;
+        private final String method;
+        private final int status;
+        private final String duration;
+
+        public LogExit(String url, String method, int status, String duration) {
+            this.url = url;
+            this.method = method;
+            this.status = status;
+            this.duration = duration;
+        }
+
+        // Getters for serialization
+        public String getUrl() { return url; }
+        public String getMethod() { return method; }
+        public int getStatus() { return status; }
+        public String getDuration() { return duration; }
     }
 }
-
