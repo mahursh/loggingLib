@@ -18,7 +18,9 @@ import com.ada.logginglib.utils.JsonUtil;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -30,17 +32,14 @@ public class LoggingFilter implements Filter {
     private final ObjectMapper objectMapper;
     private static final Logger logger = LoggerFactory.getLogger(LoggingFilter.class);
 
-    private Set<Pattern> maskedParameters = new HashSet<>();
     private Set<Pattern> ignoredPaths = new HashSet<>();
     private Set<Pattern> excludedBodyPaths = new HashSet<>();
     private String logFormat = "JSON";
 
+    private Map<Pattern, String> maskingRules = new HashMap<>();
+
     public LoggingFilter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-    }
-
-    public void setMaskedParameters(Set<String> maskedParameters) {
-        this.maskedParameters = compilePatterns(maskedParameters);
     }
 
     public void setIgnoredPaths(Set<String> ignoredPaths) {
@@ -53,6 +52,17 @@ public class LoggingFilter implements Filter {
 
     public void setLogFormat(String logFormat) {
         this.logFormat = logFormat;
+    }
+
+    public void setMaskingRules(Map<String, String> rules) {
+        rules.forEach((pattern, mask) -> maskingRules.put(Pattern.compile(pattern), mask));
+    }
+
+    private String applyMaskingRules(String jsonString) {
+        for (Map.Entry<Pattern, String> rule : maskingRules.entrySet()) {
+            jsonString = jsonString.replaceAll(rule.getKey().pattern(), rule.getValue());
+        }
+        return jsonString;
     }
 
     @Override
@@ -86,9 +96,13 @@ public class LoggingFilter implements Filter {
         String headersFormatted = JsonUtil.formatHeaders(JsonUtil.headersToMap(request));
 
         if ("JSON".equalsIgnoreCase(logFormat)) {
+
             var logEntry = new LogEntry(request.getRequestURI(), request.getMethod(), headersFormatted, body);
             String jsonLogEntry = objectMapper.writeValueAsString(logEntry);
+            jsonLogEntry = applyMaskingRules(jsonLogEntry);
             logger.info(jsonLogEntry);
+
+
         } else if ("ISO".equalsIgnoreCase(logFormat)){
             String isoLogEntry = String.format(COLOR_GREEN + """
                     \n
@@ -143,7 +157,6 @@ public class LoggingFilter implements Filter {
         return ""; // Return the body as needed
     }
 
-    // Compile regex patterns from Set<String> to Set<Pattern>
     private Set<Pattern> compilePatterns(Set<String> regexStrings) {
         Set<Pattern> patterns = new HashSet<>();
         for (String regex : regexStrings) {
@@ -152,7 +165,7 @@ public class LoggingFilter implements Filter {
         return patterns;
     }
 
-    // LogEntry and LogExit classes for JSON logging
+
     private static class LogEntry {
         private final String url;
         private final String method;
@@ -166,7 +179,6 @@ public class LoggingFilter implements Filter {
             this.body = body;
         }
 
-        // Getters for serialization
         public String getUrl() { return url; }
         public String getMethod() { return method; }
         public String getHeaders() { return headers; }
@@ -186,7 +198,6 @@ public class LoggingFilter implements Filter {
             this.duration = duration;
         }
 
-        // Getters for serialization
         public String getUrl() { return url; }
         public String getMethod() { return method; }
         public int getStatus() { return status; }
