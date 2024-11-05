@@ -28,6 +28,7 @@ import static com.ada.logginglib.constant.Colors.*;
 
 //TODO: https://www.geeksforgeeks.org/get-the-response-body-in-spring-boot-filter/ .
 //TODO: https://www.appsdeveloperblog.com/read-body-from-httpservletrequest-in-spring-filter/ .
+//TODO: https://gist.github.com/thegeekyasian/c21bb407827b32d2d9cb787f4cf72e3a .
 //TODO: remove all methods from here and put them to the seperated files .
 //TODO: add try catch if needed .
 //TODO: test AutoConfiguration .
@@ -215,6 +216,9 @@ public class LoggingFilter implements Filter {
         return patterns;
     }
 
+
+    @Override
+    public void destroy() {}
     //TODO: a method to flatten the nested object.
 
 
