@@ -1,7 +1,9 @@
 package com.ada.logginglib.filter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -18,10 +20,7 @@ import com.ada.logginglib.utils.JsonUtil;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static com.ada.logginglib.constant.Colors.*;
@@ -30,6 +29,8 @@ import static com.ada.logginglib.constant.Colors.*;
 //TODO: remove all methods from here and put them to the seperated files .
 //TODO: add try catch if needed .
 //TODO: test AutoConfiguration .
+//TODO: masking only applies on JSON format .
+
 @Component
 public class LoggingFilter implements Filter {
 
@@ -58,17 +59,51 @@ public class LoggingFilter implements Filter {
         this.logFormat = logFormat;
     }
 
+
     public void setMaskingRules(Map<String, String> rules) {
-        rules.forEach((pattern, mask) -> maskingRules.put(Pattern.compile(pattern), mask));
+        rules.forEach((fieldOrPattern, mask) -> {
+
+            if (fieldOrPattern.matches(".*[\\[\\]().*+?^$\\\\].*") || fieldOrPattern.startsWith("(?i)")) {
+                maskingRules.put(Pattern.compile(fieldOrPattern), mask);
+            } else {
+                maskingRules.put(Pattern.compile("(?i)" + fieldOrPattern), mask);
+            }
+        });
     }
 
 
-    //TODO: it is setting **** as the key , not the value.
     private String applyMaskingRules(String jsonString) {
-        for (Map.Entry<Pattern, String> rule : maskingRules.entrySet()) {
-            jsonString = jsonString.replaceAll(rule.getKey().pattern()  ,rule.getValue());
+        try {
+            JsonNode rootNode = objectMapper.readTree(jsonString);
+            maskFields(rootNode);
+            return objectMapper.writeValueAsString(rootNode);
+        } catch (IOException e) {
+            logger.error("There Was An Error In Masking Fields !");
+            return jsonString;
         }
-        return jsonString;
+    }
+
+    private void maskFields(JsonNode node) {
+        if (node.isObject()) {
+            ObjectNode objectNode = (ObjectNode) node;
+            for (Iterator<Map.Entry<String, JsonNode>> it = objectNode.fields(); it.hasNext(); ) {
+                Map.Entry<String, JsonNode> entry = it.next();
+                String fieldName = entry.getKey();
+                JsonNode fieldValue = entry.getValue();
+
+                for (Map.Entry<Pattern, String> rule : maskingRules.entrySet()) {
+                    if (rule.getKey().matcher(fieldName).matches() && fieldValue.isTextual()) {
+                        objectNode.put(fieldName, rule.getValue());
+                    }
+                }
+
+                maskFields(fieldValue);
+            }
+        } else if (node.isArray()) {
+            for (JsonNode arrayItem : node) {
+                maskFields(arrayItem);
+            }
+        }
     }
 
     @Override
@@ -115,7 +150,7 @@ public class LoggingFilter implements Filter {
                     REQUEST:
                     \tURL: %s
                     \tHTTP METHOD: %s
-                    \tHEADERS: %s
+                    \tHEADERS: \n %s
                     \tBODY: %s
                     """ + COLOR_RESET,
                     request.getRequestURI(),
@@ -135,25 +170,29 @@ public class LoggingFilter implements Filter {
         if ("JSON".equalsIgnoreCase(logFormat)) {
             var logExit = new LogExit(request.getRequestURI(), request.getMethod(), response.getStatus(), duration);
             String jsonLogExit = objectMapper.writeValueAsString(logExit);
+
+            jsonLogExit = applyMaskingRules(jsonLogExit);
+
             logger.info(jsonLogExit);
         }
         else if ("ISO".equalsIgnoreCase(logFormat)) {
             String isoLogExit = String.format(COLOR_BLUE + """
-                \n
-                RESPONSE:
-                \tURL: %s
-                \tHTTP METHOD: %s
-                \tHTTP STATUS: %d
-                \tDURATION: %s
-                """ + COLOR_RESET,
+            \n
+            RESPONSE:
+            \tURL: %s
+            \tHTTP METHOD: %s
+            \tHTTP STATUS: %d
+            \tDURATION: %s
+            """ + COLOR_RESET,
                     request.getRequestURI(),
                     request.getMethod(),
                     response.getStatus(),
                     duration
             );
             logger.info(isoLogExit);
-        }//TODO: handle other formats and not valid formats.
+        } // TODO: handle other formats and invalid formats if needed.
     }
+
 
     private String getRequestBody(HttpServletRequest request) throws IOException {
         if (excludedBodyPaths.stream().anyMatch(pattern -> pattern.matcher(request.getRequestURI()).matches())) {
