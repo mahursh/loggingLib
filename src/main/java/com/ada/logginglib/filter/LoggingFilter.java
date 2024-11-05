@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import com.ada.logginglib.utils.JsonUtil;
 
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -25,7 +26,8 @@ import java.util.regex.Pattern;
 
 import static com.ada.logginglib.constant.Colors.*;
 
-
+//TODO: https://www.geeksforgeeks.org/get-the-response-body-in-spring-boot-filter/ .
+//TODO: https://www.appsdeveloperblog.com/read-body-from-httpservletrequest-in-spring-filter/ .
 //TODO: remove all methods from here and put them to the seperated files .
 //TODO: add try catch if needed .
 //TODO: test AutoConfiguration .
@@ -112,8 +114,10 @@ public class LoggingFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+
 
         if (shouldLog(httpServletRequest.getRequestURI())) {
             var start = Instant.now();
@@ -199,6 +203,7 @@ public class LoggingFilter implements Filter {
             return "Body excluded";
         }
         // TODO: logic to read the body .
+
         return "";
     }
 
