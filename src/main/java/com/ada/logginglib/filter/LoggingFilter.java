@@ -33,6 +33,7 @@ import static com.ada.logginglib.constant.Colors.*;
 //TODO: add try catch if needed .
 //TODO: test AutoConfiguration .
 //TODO: masking only applies on JSON format .
+//TODO: problem ---> dose not work on reactive microservice .
 
 @Component
 public class LoggingFilter implements Filter {
