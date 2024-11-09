@@ -35,7 +35,7 @@ import static com.ada.logginglib.constant.Colors.*;
 //TODO: masking only applies on JSON format .
 //TODO: problem ---> dose not work on reactive microservice .
 
-@Component
+//@Component
 public class LoggingFilter implements Filter {
 
     private final ObjectMapper objectMapper;

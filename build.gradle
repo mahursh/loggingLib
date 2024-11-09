@@ -6,6 +6,7 @@ plugins {
 
 group = 'com.ada'
 version = '0.0.1-SNAPSHOT'
+archivesBaseName = 'logginLib'
 
 java {
     sourceCompatibility = '21'
