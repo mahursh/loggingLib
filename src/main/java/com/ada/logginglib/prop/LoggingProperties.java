@@ -1,23 +1,20 @@
 package com.ada.logginglib.prop;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import java.util.Map;
 import java.util.Set;
 
 
+//TODO: it is not WORKING !!!!!!!
+@EnableConfigurationProperties
 @ConfigurationProperties(prefix = "logginglib")
 public class LoggingProperties {
 
     private Set<String> ignoredPaths;
-
-
     private Set<String> excludedBodyPaths;
-
-
     private String logFormat = "JSON";
-
-
     private Map<String, String> maskingRules;
 
 
