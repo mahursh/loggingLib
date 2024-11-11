@@ -1,4 +1,4 @@
-package com.ada.logginglib.customs;
+package com.ada.logginglib.bodyEncoder;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
