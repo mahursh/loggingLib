@@ -1,6 +1,8 @@
 package com.ada.logginglib.encoder;
 
+import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggerContextVO;
 import ch.qos.logback.core.encoder.EncoderBase;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 public class CustomLoggingEncoder extends EncoderBase<ILoggingEvent> {
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private List<String> logFields = new ArrayList<>();
     private List<String> jsonKeys = new ArrayList<>();
@@ -23,6 +26,13 @@ public class CustomLoggingEncoder extends EncoderBase<ILoggingEvent> {
     @Override
     public byte[] encode(ILoggingEvent event) {
         Map<String, Object> logData = new LinkedHashMap<>();
+
+
+
+
+        if (logFields.isEmpty()) {
+            logFields = List.of("timestamp", "level", "logger", "message", "method", "url", "header");
+        }
 
         for (String field : logFields) {
             switch (field.trim().toLowerCase()) {
@@ -39,13 +49,13 @@ public class CustomLoggingEncoder extends EncoderBase<ILoggingEvent> {
                     logData.put("message", event.getFormattedMessage());
                     break;
                 case "method":
-                    logData.put("method", event.getMDCPropertyMap().get("method"));
+                    logData.put("method", event.getMDCPropertyMap().getOrDefault("method", "N/A"));
                     break;
                 case "url":
-                    logData.put("url", event.getMDCPropertyMap().get("url"));
+                    logData.put("url", event.getMDCPropertyMap().getOrDefault("url", "N/A"));
                     break;
                 case "header":
-                    logData.put("header", event.getMDCPropertyMap().get("header"));
+                    logData.put("header", event.getMDCPropertyMap().getOrDefault("header", "N/A"));
                     break;
                 default:
                     logData.put(field, "unknown");

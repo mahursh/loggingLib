@@ -14,11 +14,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.slf4j.MDC;
 import com.ada.logginglib.utils.JsonUtil;
 
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -34,6 +37,8 @@ import static com.ada.logginglib.constant.Colors.*;
 //TODO: test AutoConfiguration .
 //TODO: masking only applies on JSON format .
 //TODO: problem ---> dose not work on reactive microservice .
+//TODO: a method to flatten the nested object.
+
 
 //@Component
 public class LoggingFilter implements Filter {
@@ -139,6 +144,9 @@ public class LoggingFilter implements Filter {
     }
 
     private void logEntry(HttpServletRequest request) throws IOException {
+        MDC.put("method", request.getMethod());
+        MDC.put("url", request.getRequestURI());
+
         String body = getRequestBody(request);
         String headersFormatted = JsonUtil.formatHeaders(JsonUtil.headersToMap(request));
 
@@ -172,6 +180,8 @@ public class LoggingFilter implements Filter {
 
     private void logExit(HttpServletRequest request, HttpServletResponse response, Instant start, Instant end) throws JsonProcessingException {
         String duration = String.format("%d ms", ChronoUnit.MILLIS.between(start, end));
+        MDC.put("status", String.valueOf(response.getStatus()));
+        MDC.put("duration", duration);
 
         if ("JSON".equalsIgnoreCase(logFormat)) {
             var logExit = new LogExit(request.getRequestURI(), request.getMethod(), response.getStatus(), duration);
@@ -197,6 +207,8 @@ public class LoggingFilter implements Filter {
             );
             logger.info(isoLogExit);
         } // TODO: handle other formats and invalid formats if needed.
+
+        MDC.clear();
     }
 
 
@@ -204,9 +216,14 @@ public class LoggingFilter implements Filter {
         if (excludedBodyPaths.stream().anyMatch(pattern -> pattern.matcher(request.getRequestURI()).matches())) {
             return "Body excluded";
         }
-        // TODO: logic to read the body .
-
-        return "";
+        StringBuilder body = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(request.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                body.append(line);
+            }
+        }
+        return body.toString();
     }
 
     private Set<Pattern> compilePatterns(Set<String> regexStrings) {
@@ -220,7 +237,6 @@ public class LoggingFilter implements Filter {
 
     @Override
     public void destroy() {}
-    //TODO: a method to flatten the nested object.
 
 
     private static class LogEntry {
