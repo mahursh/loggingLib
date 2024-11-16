@@ -88,6 +88,7 @@ public class LoggingFilter implements Filter {
             return objectMapper.writeValueAsString(rootNode);
         } catch (IOException e) {
             logger.error("There Was An Error In Masking Fields !");
+
             return jsonString;
         }
     }
