@@ -16,10 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import com.ada.logginglib.utils.JsonUtil;
-import org.springframework.context.annotation.Bean;
-import org.springframework.web.filter.CommonsRequestLoggingFilter;
-
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
