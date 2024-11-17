@@ -7,6 +7,7 @@ import ch.qos.logback.core.encoder.EncoderBase;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,7 +21,7 @@ public class CustomLoggingEncoder extends EncoderBase<ILoggingEvent> {
 
     @Override
     public byte[] headerBytes() {
-        return "".getBytes();
+        return "".getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -72,7 +73,7 @@ public class CustomLoggingEncoder extends EncoderBase<ILoggingEvent> {
 
     @Override
     public byte[] footerBytes() {
-        return "".getBytes();
+        return "".getBytes(StandardCharsets.UTF_8);
     }
 
 }

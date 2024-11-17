@@ -16,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import com.ada.logginglib.utils.JsonUtil;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
 
 import java.io.BufferedReader;
@@ -51,6 +53,21 @@ public class LoggingFilter implements Filter {
     private String logFormat = "JSON";
 
     private Map<Pattern, String> maskingRules = new HashMap<>();
+
+
+
+    //TODO: consider using this .
+//    @Bean
+//    private CommonsRequestLoggingFilter requestLoggingFilter() {
+//        CommonsRequestLoggingFilter loggingFilter = new CommonsRequestLoggingFilter();
+//        loggingFilter.setIncludeClientInfo(true);
+//        loggingFilter.setIncludeQueryString(true);
+//        loggingFilter.setIncludePayload(true);
+//        loggingFilter.setMaxPayloadLength(1000);
+//        loggingFilter.setIncludeHeaders(false);
+//
+//        return loggingFilter;
+//    }
 
     public LoggingFilter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -117,7 +134,8 @@ public class LoggingFilter implements Filter {
     }
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {}
+    public void init(FilterConfig filterConfig) throws ServletException {
+    }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -159,21 +177,21 @@ public class LoggingFilter implements Filter {
             logger.info(jsonLogEntry);
 
 
-        } else if ("ISO".equalsIgnoreCase(logFormat)){
+        } else if ("ISO".equalsIgnoreCase(logFormat)) {
             String isoLogEntry = String.format(COLOR_GREEN + """
-                    \n
-                    REQUEST:
-                    \tURL: %s
-                    \tHTTP METHOD: %s
-                    \tHEADERS: \n %s
-                    \tBODY: %s
-                    """ + COLOR_RESET,
+                            \n
+                            REQUEST:
+                            \tURL: %s
+                            \tHTTP METHOD: %s
+                            \tHEADERS: \n %s
+                            \tBODY: %s
+                            """ + COLOR_RESET,
                     request.getRequestURI(),
                     request.getMethod(),
                     headersFormatted,
                     body
 
-                    );
+            );
             logger.info(isoLogEntry);
 
         }//TODO: handle other formats and not valid formats.
@@ -191,16 +209,15 @@ public class LoggingFilter implements Filter {
             jsonLogExit = applyMaskingRules(jsonLogExit);
 
             logger.info(jsonLogExit);
-        }
-        else if ("ISO".equalsIgnoreCase(logFormat)) {
+        } else if ("ISO".equalsIgnoreCase(logFormat)) {
             String isoLogExit = String.format(COLOR_BLUE + """
-            \n
-            RESPONSE:
-            \tURL: %s
-            \tHTTP METHOD: %s
-            \tHTTP STATUS: %d
-            \tDURATION: %s
-            """ + COLOR_RESET,
+                            \n
+                            RESPONSE:
+                            \tURL: %s
+                            \tHTTP METHOD: %s
+                            \tHTTP STATUS: %d
+                            \tDURATION: %s
+                            """ + COLOR_RESET,
                     request.getRequestURI(),
                     request.getMethod(),
                     response.getStatus(),
@@ -237,7 +254,8 @@ public class LoggingFilter implements Filter {
 
 
     @Override
-    public void destroy() {}
+    public void destroy() {
+    }
 
 
     private static class LogEntry {
@@ -253,10 +271,21 @@ public class LoggingFilter implements Filter {
             this.body = body;
         }
 
-        public String getUrl() { return url; }
-        public String getMethod() { return method; }
-        public String getHeaders() { return headers; }
-        public String getBody() { return body; }
+        public String getUrl() {
+            return url;
+        }
+
+        public String getMethod() {
+            return method;
+        }
+
+        public String getHeaders() {
+            return headers;
+        }
+
+        public String getBody() {
+            return body;
+        }
     }
 
     private static class LogExit {
@@ -272,9 +301,20 @@ public class LoggingFilter implements Filter {
             this.duration = duration;
         }
 
-        public String getUrl() { return url; }
-        public String getMethod() { return method; }
-        public int getStatus() { return status; }
-        public String getDuration() { return duration; }
+        public String getUrl() {
+            return url;
+        }
+
+        public String getMethod() {
+            return method;
+        }
+
+        public int getStatus() {
+            return status;
+        }
+
+        public String getDuration() {
+            return duration;
+        }
     }
 }
