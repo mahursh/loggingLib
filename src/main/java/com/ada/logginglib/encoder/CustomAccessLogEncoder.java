@@ -16,17 +16,17 @@ public class CustomAccessLogEncoder extends EncoderBase<IAccessEvent>
     public byte[] encode(IAccessEvent event) {
         StringBuilder logBuilder = new StringBuilder();
 
-        // Add general log parts
+
         logBuilder.append("timestamp=").append(event.getTimeStamp()).append(" ");
         logBuilder.append("thread=").append(Thread.currentThread().getName()).append(" ");
 //        logBuilder.append("logger=").append(event.getLoggerName()).append(" ");
 
-        // Add request details
+
         logBuilder.append("method=").append(event.getMethod()).append(" ");
         logBuilder.append("url=").append(event.getRequestURL()).append(" ");
         logBuilder.append("headers=").append(event.getRequestHeaderMap()).append(" ");
 
-        // Add response details
+
         logBuilder.append("status=").append(event.getStatusCode()).append(" ");
         logBuilder.append("responseHeaders=").append(event.getResponseHeaderMap()).append(" ");
 

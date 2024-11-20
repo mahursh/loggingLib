@@ -3,25 +3,39 @@ package com.ada.logginglib.filter;
 import ch.qos.logback.access.common.spi.AccessEvent;
 import ch.qos.logback.access.common.spi.ServerAdapter;
 import ch.qos.logback.classic.LoggerContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Pattern;
 
 
 public class CustomAccessLogFilter implements Filter {
 
-    private final List<String> excludedUrls;
-    private final Map<String, String> fieldsToMask;
 
-    public CustomAccessLogFilter(List<String> excludedUrls, Map<String, String> fieldsToMask) {
+
+    private Set<String> excludedUrls = new HashSet<>();
+    private Map<String, String> fieldsToMask = new HashMap<>();
+    private ObjectMapper objectMapper;
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger("ACCESS");
+
+    public CustomAccessLogFilter(ObjectMapper objectMapper){
+        this.objectMapper = objectMapper;
+    }
+    public void setExcludedUrls(Set<String> excludedUrls){
         this.excludedUrls = excludedUrls;
+    }
+    public void setFieldsToMask(Map<String, String> fieldsToMask){
         this.fieldsToMask = fieldsToMask;
     }
+
+
+
+
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
@@ -77,12 +91,12 @@ public class CustomAccessLogFilter implements Filter {
     }
 
     private void maskSensitiveFields(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        // Iterate through the fields to mask
+
         for (Map.Entry<String, String> entry : fieldsToMask.entrySet()) {
             String fieldName = entry.getKey();
             String maskPattern = entry.getValue();
 
-            // Mask the request parameters
+
             String[] paramValues = httpRequest.getParameterValues(fieldName);
             if (paramValues != null) {
                 for (int i = 0; i < paramValues.length; i++) {
@@ -90,13 +104,13 @@ public class CustomAccessLogFilter implements Filter {
                 }
             }
 
-            // Mask headers if necessary
+
             String headerValue = httpRequest.getHeader(fieldName);
             if (headerValue != null) {
                 httpRequest.setAttribute(fieldName, headerValue.replaceAll(".", maskPattern));
             }
 
-            // Mask response headers if necessary
+
             String responseHeaderValue = httpResponse.getHeader(fieldName);
             if (responseHeaderValue != null) {
                 httpResponse.setHeader(fieldName, responseHeaderValue.replaceAll(".", maskPattern));
@@ -105,8 +119,6 @@ public class CustomAccessLogFilter implements Filter {
     }
 
     private void logAccessEvent(AccessEvent accessEvent, long elapsedTime) {
-        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger("ACCESS");
-        // Log the AccessEvent with the additional elapsedTime
         logger.info("AccessEvent: {}, elapsedTime: {} ms", accessEvent, elapsedTime);
     }
 }
