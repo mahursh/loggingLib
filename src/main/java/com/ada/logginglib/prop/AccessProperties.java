@@ -2,11 +2,13 @@ package com.ada.logginglib.prop;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
 import java.util.Map;
 import java.util.Set;
 
-@EnableConfigurationProperties
-@ConfigurationProperties(prefix = "access")
+
+@ConfigurationProperties(prefix = "logger-access")
 public class AccessProperties {
 
     private Set<String> excludedUrls ;
