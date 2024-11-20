@@ -8,12 +8,13 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-
+@Component
 public class CustomAccessLogFilter implements Filter {
 
 
@@ -46,7 +47,7 @@ public class CustomAccessLogFilter implements Filter {
 
 
             String requestUrl = httpRequest.getRequestURI();
-            if (excludedUrls.contains(requestUrl)) {
+            if (!excludedUrls.contains(requestUrl)) {
 
                 LoggerContext context = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
                 long requestTimestamp = System.currentTimeMillis();
@@ -100,20 +101,20 @@ public class CustomAccessLogFilter implements Filter {
             String[] paramValues = httpRequest.getParameterValues(fieldName);
             if (paramValues != null) {
                 for (int i = 0; i < paramValues.length; i++) {
-                    httpRequest.setAttribute(fieldName, paramValues[i].replaceAll(".", maskPattern));
+                    paramValues[i] = maskPattern;
                 }
             }
 
 
             String headerValue = httpRequest.getHeader(fieldName);
             if (headerValue != null) {
-                httpRequest.setAttribute(fieldName, headerValue.replaceAll(".", maskPattern));
+                httpRequest.setAttribute(fieldName, maskPattern);
             }
 
 
             String responseHeaderValue = httpResponse.getHeader(fieldName);
             if (responseHeaderValue != null) {
-                httpResponse.setHeader(fieldName, responseHeaderValue.replaceAll(".", maskPattern));
+                httpResponse.setHeader(fieldName, maskPattern);
             }
         }
     }
