@@ -2,7 +2,6 @@ package com.ada.logginglib.config;
 
 import com.ada.logginglib.filter.CustomAccessLogFilter;
 import com.ada.logginglib.prop.AccessProperties;
-import com.ada.logginglib.prop.LoggingProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -12,7 +11,7 @@ import org.springframework.context.annotation.Import;
 
 @Configuration
 @EnableConfigurationProperties(AccessProperties.class)
-@Import({ObjectMapperConfig.class, AccessLoggingConfig.class})
+@Import({ObjectMapperConfig.class})
 public class AccessLoggingConfig {
 
     @Bean
